@@ -1,5 +1,6 @@
 # /usr/bin/python -i
 
+
 # # import json
     # import yaml
 
@@ -48,6 +49,7 @@
     # print(f'\n{cfg}\n')
 
     # print(yaml.dump(cfg, sort_keys=False))
+
 
 # # # DONT change code line order
 
@@ -143,7 +145,7 @@ def gen(*args, **kwargs): # x):
                         # 'payload': [f'"sensor":{fake.word()}, "value":{randint(0,999)}']
                         }
                     }
-                file_name = f'group_{group}-{fake_device["eventName"]}.yaml'
+                file_name = f'{fake_device["eventName"]}.yaml'
                 with open(r'output/{filename}'.format(filename=file_name), 'w') as file:
                     documents = yaml.dump(fake_device, file, sort_keys=False)
                 # print(fake_device)
@@ -319,9 +321,6 @@ def gen_scripts(*args):
     file = args[0]
     with open(file,'r') as stream:
         z = yaml.safe_load(stream)
-        # print(z)
-        # print(z['device']['payload'][0])
-        # print(z['device']['payload'])
         return (
         f"import requests\n"
         f"import asyncio\n"
@@ -329,6 +328,7 @@ def gen_scripts(*args):
         f"import signal\n"
         f"import time\n"
         f"# import requests\n"
+        f"from pprint import pprint\n"
 
         f"from gmqtt import Client as MQTTClient\n"
 
@@ -338,18 +338,27 @@ def gen_scripts(*args):
 
 
         f"STOP = asyncio.Event()\n"
+
         f"payload='device {z['device']['name']} connected'\n"
-        #   payload = {'firstname': 'lex', 'lastname':'arpman'}\n"
+
         f"def on_connect(client, flags, rc, properties):\n"
         f"    print('Connected')\n"
-        f"    client.subscribe('TEST/singularity', qos=0)\n"
+        f"    if flags != 0:\n"
+        f"        print(flags)\n"
+        f"\n"
+        f"    if rc != 0:\n"
+        f"        print(rc)\n"
+        f"    pprint(properties)\n"
+        f"    client.subscribe('TEST/{z['device']['name']}', qos=0)\n"
         # f"    rr = requests.get('http://localhost:8080/welcome', params=payload)\n"
         # f"    print(rr.text)\n"
 
 
         f"def on_message(client, topic, payload, qos, properties):\n"
-        f"    print('RECV MSG:', payload)\n"
-        f"    print(dir(client))\n"
+        f"    print('RECV MSG:', payload, 'ON TOPIC:', topic)\n"
+        f"    if payload.decode() == 'fire':\n"
+        f"        print('spec payload detected')\n"
+        f"        print(properties)\n"
         # f"    pass\n"
 
 
@@ -358,6 +367,7 @@ def gen_scripts(*args):
 
         f"def on_subscribe(client, mid, qos, properties):\n"
         f"    print('SUBSCRIBED')\n"
+        f"    print(properties)\n"
 
         f"def ask_exit(*args):\n"
         f"    STOP.set()\n"
@@ -401,6 +411,11 @@ def save_script(*args):
     with open(script_name, 'w') as streamout:
         streamout.write(script_content)
 
+def save_all_scripts(*args):
+    devs = args[0]
+    for x in devs:
+        z = gen_scripts('output/'+x)
+        save_script('gen_clients/'+x,z)
 
 ### this can live in diff file
 def test():
