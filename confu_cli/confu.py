@@ -353,11 +353,13 @@ def gen_scripts(*args):
 
         f"def on_connect(client, flags, rc, properties):\n"
         f"    print('Connected')\n"
+        f"\n"
         f"    if flags != 0:\n"
         f"        print(flags)\n"
         f"\n"
         f"    if rc != 0:\n"
         f"        print(rc)\n"
+        f"\n"
         f"    pprint(properties)\n"
         f"    client.subscribe('TEST/{z['device']['name']}', qos=0)\n"
         # f"    rr = requests.get('http://localhost:8080/welcome', params=payload)\n"
