@@ -57,6 +57,7 @@
 import os
 import readline
 import yaml
+import random
 from random import randint
 import namesgenerator
 from faker import Faker
@@ -128,6 +129,15 @@ def gen(*args, **kwargs): # x):
     """
 
     if args or kwargs:
+        # add & randomize sensor data
+        # pick list index randomly using randint()
+        object_list = [randint(0,9),randint(0,99),randint(0,999),fake.word()]
+        i = randint(0, len(object_list) - 1)
+        # Randomly select object from the given list of custom class objects
+        obj = object_list[i]
+        print(obj)
+        # Output John 18
+        # add & randomize sensor data
         x = args[0]
         files_to_read = []
         if kwargs:
@@ -135,7 +145,7 @@ def gen(*args, **kwargs): # x):
             #single token fake devices
             for i in range(0, x):
                 fake_device = {
-                    'eventName': fake.word()+'-event',
+                    'eventName': f"{fake.word()}-event",
                     'device': {
                         'name': namesgenerator.get_random_name(),
                         'token': kwargs['token'],
@@ -343,11 +353,13 @@ def gen_scripts(*args):
 
         f"def on_connect(client, flags, rc, properties):\n"
         f"    print('Connected')\n"
+        f"\n"
         f"    if flags != 0:\n"
         f"        print(flags)\n"
         f"\n"
         f"    if rc != 0:\n"
         f"        print(rc)\n"
+        f"\n"
         f"    pprint(properties)\n"
         f"    client.subscribe('TEST/{z['device']['name']}', qos=0)\n"
         # f"    rr = requests.get('http://localhost:8080/welcome', params=payload)\n"

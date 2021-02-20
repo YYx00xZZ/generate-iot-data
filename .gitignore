@@ -2,3 +2,4 @@
 _output/
 output/
 gen_clients/
+*.pyc
