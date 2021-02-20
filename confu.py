@@ -416,11 +416,13 @@ def save_script(*args):
     with open(script_name, 'w') as streamout:
         streamout.write(script_content)
 
+
 def save_all_scripts(*args):
     devs = args[0]
     for x in devs:
         z = gen_scripts('output/'+x)
         save_script('gen_clients/'+x,z)
+
 
 ### this can live in diff file
 def test():
