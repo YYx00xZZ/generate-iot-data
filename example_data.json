@@ -1,0 +1,7 @@
+{
+    "eventName": "SingleWebhookAllDevices",
+    "deviceName": "pyscan",
+    "deviceToken": "ec665d8c-9ef6-4727-9350-6e15f671ed4b",
+    "signalNumber": "1",
+    "signalPayload": "(-0.01086426, 0.02380371, 0.9781494)"
+}

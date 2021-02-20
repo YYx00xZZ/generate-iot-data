@@ -61,6 +61,9 @@ from random import randint
 import namesgenerator
 from faker import Faker
 from contextvars import ContextVar
+import fire
+import json
+import sys
 
 fatal_text = '[FATAL]\t'
 debug_text = '[DEBUG]\t'
@@ -119,6 +122,12 @@ fake_device = {
         }
     }
 
+def _to_json(*args):
+    yml_file = args[0] # path relative to root
+    with open(yml_file, 'r') as stream:
+        uai = yaml.safe_load(stream)
+    jyml = json.dumps(uai)
+    return jyml
 
 def gen(*args, **kwargs): # x):
     """
@@ -140,15 +149,13 @@ def gen(*args, **kwargs): # x):
                         'name': namesgenerator.get_random_name(),
                         'token': kwargs['token'],
                         'signaln': randint(0,10),
-                        'sensor': [str(fake.word())],
-                        'value': [randint(0,999)],
-                        # 'payload': [f'"sensor":{fake.word()}, "value":{randint(0,999)}']
+                        'sensor': str(fake.word()),
+                        'value': randint(0,999),
                         }
                     }
                 file_name = f'{fake_device["eventName"]}.yaml'
                 with open(r'output/{filename}'.format(filename=file_name), 'w') as file:
                     documents = yaml.dump(fake_device, file, sort_keys=False)
-                # print(fake_device)
                 files_to_read.append(file_name)
         else:
             # random fake devices
@@ -159,19 +166,15 @@ def gen(*args, **kwargs): # x):
                         'name': namesgenerator.get_random_name(),
                         'token': fake.uuid4(),
                         'signaln': randint(0,10),
-                        'sensor': [str(fake.word())],
-                        'value': [randint(0,999)],
-                        # 'payload': [f'"sensor":{fake.word()}, "value":{randint(0,999)}']
+                        'sensor': str(fake.word()),
+                        'value': randint(0,999),
                         }
                     }
                 file_name = f'{fake_device["eventName"]}.yaml'
                 with open(r'output/{filename}'.format(filename=file_name), 'w') as file:
                     documents = yaml.dump(fake_device, file, sort_keys=False)
-                # print(fake_device)
                 files_to_read.append(file_name)
         print('-'*7+'[END]'+'-'*7)
-        print()
-        print()
         return files_to_read
     else:
         print('enter num of stubs to gen, e.g. gen(1)')
@@ -179,7 +182,7 @@ def gen(*args, **kwargs): # x):
 
 
 
-def read_all(*args): # files_to_read):
+def read_all(*args):
     """
     print config of every device;
     TODO add filtering methods etc.;
@@ -322,89 +325,90 @@ def gen_scripts(*args):
     with open(file,'r') as stream:
         z = yaml.safe_load(stream)
         return (
-        f"import requests\n"
-        f"import asyncio\n"
-        f"import os\n"
-        f"import signal\n"
-        f"import time\n"
-        f"# import requests\n"
-        f"from pprint import pprint\n"
+            f"import requests\n"
+            f"import asyncio\n"
+            f"import os\n"
+            f"import signal\n"
+            f"import time\n"
+            f"# import requests\n"
+            f"from pprint import pprint\n"
 
-        f"from gmqtt import Client as MQTTClient\n"
+            f"from gmqtt import Client as MQTTClient\n"
 
-        f"# gmqtt also compatibility with uvloop  \n"
-        f"import uvloop\n"
-        f"asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())\n"
-
-
-        f"STOP = asyncio.Event()\n"
-
-        f"payload='device {z['device']['name']} connected'\n"
-
-        f"def on_connect(client, flags, rc, properties):\n"
-        f"    print('Connected')\n"
-        f"    if flags != 0:\n"
-        f"        print(flags)\n"
-        f"\n"
-        f"    if rc != 0:\n"
-        f"        print(rc)\n"
-        f"    pprint(properties)\n"
-        f"    client.subscribe('TEST/{z['device']['name']}', qos=0)\n"
-        # f"    rr = requests.get('http://localhost:8080/welcome', params=payload)\n"
-        # f"    print(rr.text)\n"
+            f"# gmqtt also compatibility with uvloop  \n"
+            f"import uvloop\n"
+            f"asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())\n"
 
 
-        f"def on_message(client, topic, payload, qos, properties):\n"
-        f"    print('RECV MSG:', payload, 'ON TOPIC:', topic)\n"
-        f"    if payload.decode() == 'fire':\n"
-        f"        pass\n"
-        f"\n"
+            f"STOP = asyncio.Event()\n"
+
+            f"payload='device {z['device']['name']} connected'\n"
+            f"\n"
+
+            f"def on_connect(client, flags, rc, properties):\n"
+            f"    print('Connected')\n"
+            f"    if flags != 0:\n"
+            f"        print(flags)\n"
+            f"\n"
+            f"    if rc != 0:\n"
+            f"        print(rc)\n"
+            # f"    pprint(properties)\n"
+            f"    client.subscribe('TEST/{z['device']['name']}', qos=0)\n"
+            # f"    rr = requests.get('http://localhost:8080/welcome', params=payload)\n"
+            # f"    print(rr.text)\n"
+
+            f"\n"
+            f"def on_message(client, topic, payload, qos, properties):\n"
+            f"    print('RECV MSG:', payload, 'ON TOPIC:', topic)\n"
+            f"    if payload.decode() == 'fire':\n"
+            f"        pass\n"
+            f"\n"
 
 
-        f"def on_disconnect(client, packet, exc=None):\n"
-        f"    print('Disconnected')\n"
-        f"\n"
+            f"def on_disconnect(client, packet, exc=None):\n"
+            f"    print('Disconnected')\n"
+            f"\n"
 
-        f"def on_subscribe(client, mid, qos, properties):\n"
-        f"    print('SUBSCRIBED')\n"
-        f"    client.publish('TEST/{z['device']['name']}', 'fire', qos=0)\n"
-        # f"    print(properties)\n"
-        f"\n"
+            f"def on_subscribe(client, mid, qos, properties):\n"
+            f"    print('SUBSCRIBED')\n"
+            f"    client.publish('TEST/{z['device']['name']}/config', {z}, qos=0)\n"
+            # f"    print(properties)\n"
+            f"\n"
 
-        f"def ask_exit(*args):\n"
-        f"    STOP.set()\n"
-        f"\n"
+            f"def ask_exit(*args):\n"
+            f"    STOP.set()\n"
+            f"\n"
 
-        f"async def main(broker_host, token):\n"
-        f"    client = MQTTClient('{z['device']['name']}')\n"
-        # f"    print(dir(client))\n"
-        f"    client.on_connect = on_connect\n"
-        f"    client.on_message = on_message\n"
-        f"    client.on_disconnect = on_disconnect\n"
-        f"    client.on_subscribe = on_subscribe\n"
-        f"    \n"
-        f"    client.set_auth_credentials(token, None)\n"
-        f"    await client.connect(broker_host)\n"
-        f"\n"
+            f"async def main(broker_host, token):\n"
+            f"    client = MQTTClient('{z['device']['name']}')\n"
+            # f"    print(dir(client))\n"
+            f"    client.on_connect = on_connect\n"
+            f"    client.on_message = on_message\n"
+            f"    client.on_disconnect = on_disconnect\n"
+            f"    client.on_subscribe = on_subscribe\n"
+            f"    \n"
+            f"    client.set_auth_credentials(token, None)\n"
+            f"    await client.connect(broker_host)\n"
+            f"\n"
 
-        # f"    client.publish('TEST/TIME', str(time.time()), qos=0)\n"
-        f"    client.publish('TEST/{z['device']['name']}', 'fire', qos=0)\n"# str({z['device']['sensor']}+{z['device']['value']}), qos=0)\n"
-        f"\n"
+            # f"    client.publish('TEST/TIME', str(time.time()), qos=0)\n"
+            # f"    client.publish('TEST/{z['device']['name']}', 'fire', qos=0)\n"# str({z['device']['sensor']}+{z['device']['value']}), qos=0)\n"
+            f"\n"
 
-        f"    await STOP.wait()\n"
-        f"    await client.disconnect()\n"
+            f"    await STOP.wait()\n"
+            f"    await client.disconnect()\n"
 
 
-        f"if __name__ == '__main__':\n"
-        f"    loop = asyncio.get_event_loop()\n"
-        f"    host = 'mqtt.flespi.io'\n"
-        f"    token = '{z['device']['token']}'\n"
-        f"    \n"
-        f"    loop.add_signal_handler(signal.SIGINT, ask_exit)\n"
-        f"    loop.add_signal_handler(signal.SIGTERM, ask_exit)\n"
-        f"\n"
+            f"if __name__ == '__main__':\n"
+            f"    loop = asyncio.get_event_loop()\n"
+            f"    host = 'mqtt.flespi.io'\n"
+            f"    token = '{z['device']['token']}'\n"
+            f"    \n"
+            f"    loop.add_signal_handler(signal.SIGINT, ask_exit)\n"
+            f"    loop.add_signal_handler(signal.SIGTERM, ask_exit)\n"
+            f"\n"
 
-        f"    loop.run_until_complete(main(host, token))\n")
+            f"    loop.run_until_complete(main(host, token))\n")
 
 
 def save_script(*args):
@@ -412,7 +416,7 @@ def save_script(*args):
     script_name = script_name.strip('.yaml').replace('-', '_')
     script_name = script_name+'.py'
     script_content = args[1]
-    print(f'\n\n{script_name}\n\n')
+    # print(f'{script_name}')
     with open(script_name, 'w') as streamout:
         streamout.write(script_content)
 
@@ -433,3 +437,5 @@ def test():
 
 
 # flespi id Umi9qoGBYmWdesfHxw3fXpy4rUIsO5vwiEvwQZWEbIHdYLIj7BoTQKN5vmm7fHtl
+if __name__ == '__main__':
+    fire.Fire()
